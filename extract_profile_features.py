@@ -9,8 +9,8 @@ DELIMITER = ','
 '''
 user features only contains sex and city now
 '''
-def extract_user_features(user_profile_file_path):
-    user_features = {}
+def extract_profile_features(user_profile_file_path):
+    profile_features = {}
     user_profile = open(user_profile_file_path)
     first_line = True
     for line in user_profile:
@@ -18,15 +18,15 @@ def extract_user_features(user_profile_file_path):
             first_line = False
             continue
         uid, sex, city, cslt = line.split(DELIMITER)
-        user_features[uid] = [int(sex), int(city)]
+        profile_features[uid] = [int(sex), int(city)]
 
-    return user_features
+    return profile_features
 
 
 if __name__ == '__main__':
     path = os.path.abspath(os.path.dirname(__file__))
     print path
     user_profile_file_path = path + '/user_profile_table.csv'
-    user_features = extract_user_features(user_profile_file_path)
-    for key, val in user_features.items():
+    profile_features = extract_profile_features(user_profile_file_path)
+    for key, val in profile_features.items():
         print key, val
