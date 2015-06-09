@@ -4,7 +4,7 @@ __author__ = 'woniu17'
 
 import os
 
-import pandas as pd
+#import pandas as pd
 
 DELIMITER = ','
 
@@ -41,7 +41,7 @@ def extract_balance_features(user_balance_file_path):
             category3, category4  \
             = line.split(DELIMITER)
         key = '%s:%s' % (uid, report_date)
-        balance_features[key] = [total_purchase_amt, total_redeem_amt]
+        balance_features[key] = [float(total_purchase_amt), float(total_redeem_amt)]
     return balance_features
 
 

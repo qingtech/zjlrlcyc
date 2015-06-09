@@ -18,7 +18,7 @@ def extract_profile_features(user_profile_file_path):
             first_line = False
             continue
         uid, sex, city, cslt = line.split(DELIMITER)
-        profile_features[uid] = [int(sex), int(city)]
+        profile_features[uid] = [float(sex), float(city)]
 
     return profile_features
 

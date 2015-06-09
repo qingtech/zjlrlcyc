@@ -58,12 +58,13 @@ def predict():
         if tmp_key not in balance_features:
             tmp_key = key
         last_month_today_balance = balance_features[tmp_key]
-        is_mon_to_thur_ = [is_mon_to_thur(today_),] #是否周一到周四
+        is_mon_to_thur_ = [float(is_mon_to_thur(today_)),] #是否周一到周四
         #print 'is_mon_to_thur:', is_mon_to_thur_
         feature = profile + yestoday_balance +\
             last_month_today_balance + is_mon_to_thur_ #+\
             #interest_features[today]
         #print 'feature:', feature
+        #print val[0]
         x.append(feature)
         y1.append(val[0])
         y2.append(val[1])
@@ -87,22 +88,30 @@ def predict():
             tmp_key = '%s:%s' % (uid, yestoday)
             if tmp_key not in balance_features:
                 tmp_key = key
-            yestoday_balance = balance_features[tmp_key]
+            if tmp_key not in balance_features:
+                yestoday_balance = [1.0, 1.0]
+            else:
+                yestoday_balance = balance_features[tmp_key]
             last_month_today = get_last_month_today(today_)
             #print 'last_month_today', last_month_today
             tmp_key = '%s:%s' % (uid, last_month_today)
             if tmp_key not in balance_features:
                 tmp_key = key
-            last_month_today_balance = balance_features[tmp_key]
-            is_mon_to_thur_ = [is_mon_to_thur(today_),] #是否周一到周四
+            if tmp_key not in balance_features:
+                last_month_today_balance = [1.0, 1.0]
+            else:
+                last_month_today_balance = balance_features[tmp_key]
+            is_mon_to_thur_ = [float(is_mon_to_thur(today_)),] #是否周一到周四
             #print 'is_mon_to_thur:', is_mon_to_thur_
             feature = profile + yestoday_balance +\
                 last_month_today_balance + is_mon_to_thur_ #+\
                 #interest_features[today]
-            p += clf1.predict([feature,])[0]
-            r += clf2.predict([feature,])[0]
-        print 'date\tp\tr'
-        print '%s\t%s\t%s' % (today, p, r)
+            pp = clf1.predict([feature,])[0]
+            rr = clf2.predict([feature,])[0]
+            balance_features[key] = [pp, rr]
+            p += pp
+            r += rr
+        print '%s,%s,%s' % (today, int(p), int(r))
         purchase.append(p)
         redeem.append(r)
 
