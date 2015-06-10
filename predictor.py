@@ -14,6 +14,11 @@ from extract_balance_features import extract_balance_features
 from extract_interest_features import extract_interest_features
 
 
+profile_features = None
+interest_features = None
+balance_features = None
+
+
 def get_last_month_today(today):
      last_month = today.replace(day = 1) - datetime.timedelta(days = 1)
      last_month_days = calendar.monthrange(last_month.year, last_month.month)[-1]
@@ -24,10 +29,48 @@ def get_last_month_today(today):
 
 def is_mon_to_thur(today):
      weekday = today.weekday()
-     return weekday>=0 and weekday<=3
+     return weekday in xrange(0, 4)
+
+
+def get_features(uid, today):
+    global profile_features
+    global interest_features
+    global balance_features
+    #print 'today:', today
+    key = '%s:%s' % (uid, today)
+    profile = profile_features[uid]
+    today_ = datetime.datetime(*time.strptime(today, '%Y%m%d')[:3])
+    yestoday = (today_ - datetime.timedelta(days = 1)).strftime('%Y%m%d')
+    #print 'yestoday:', yestoday
+    tmp_key = '%s:%s' % (uid, yestoday)
+    if tmp_key not in balance_features:
+        tmp_key = key
+    if tmp_key in balance_features:
+        yestoday_balance = balance_features[tmp_key]
+    else:
+        yestoday_balance = [1.0, 1.0]
+    last_month_today = get_last_month_today(today_)
+    #print 'last_month_today', last_month_today
+    tmp_key = '%s:%s' % (uid, last_month_today)
+    if tmp_key not in balance_features:
+        tmp_key = key
+    if tmp_key in balance_features:
+        last_month_today_balance = balance_features[tmp_key]
+    else:
+        last_month_today_balance = [1.0, 1.0]
+    is_mon_to_thur_ = [float(is_mon_to_thur(today_)),] #是否周一到周四
+    #print 'is_mon_to_thur:', is_mon_to_thur_
+    features = profile + yestoday_balance +\
+        last_month_today_balance + is_mon_to_thur_ #+\
+        #interest_features[today]
+    #print 'features:', features
+    return features
 
 
 def predict():
+    global profile_features
+    global interest_features
+    global balance_features
     path = os.path.abspath(os.path.dirname(__file__))
     user_profile_file_path = path + '/user_profile_table.csv'
     profile_features = extract_profile_features(user_profile_file_path)
@@ -43,35 +86,17 @@ def predict():
     y2 = []
     for key, val in balance_features.iteritems():
         uid, today = key.split(':')
-        #print 'today:', today
-        profile = profile_features[uid]
-        today_ = datetime.datetime(*time.strptime(today, '%Y%m%d')[:3])
-        yestoday = (today_ - datetime.timedelta(days = 1)).strftime('%Y%m%d')
-        #print 'yestoday:', yestoday
-        tmp_key = '%s:%s' % (uid, yestoday)
-        if tmp_key not in balance_features:
-            tmp_key = key
-        yestoday_balance = balance_features[tmp_key]
-        last_month_today = get_last_month_today(today_)
-        #print 'last_month_today', last_month_today
-        tmp_key = '%s:%s' % (uid, last_month_today)
-        if tmp_key not in balance_features:
-            tmp_key = key
-        last_month_today_balance = balance_features[tmp_key]
-        is_mon_to_thur_ = [float(is_mon_to_thur(today_)),] #是否周一到周四
-        #print 'is_mon_to_thur:', is_mon_to_thur_
-        feature = profile + yestoday_balance +\
-            last_month_today_balance + is_mon_to_thur_ #+\
-            #interest_features[today]
-        #print 'feature:', feature
         #print val[0]
-        x.append(feature)
+        features = get_features(uid, today)
+        x.append(features)
         y1.append(val[0])
         y2.append(val[1])
 
     clf1 = lm.LinearRegression()
-    clf1.fit(x, y1)
     clf2 = lm.LinearRegression()
+    clf1 = lm.LogisticRegression()
+    clf2 = lm.LogisticRegression()
+    clf1.fit(x, y1)
     clf2.fit(x, y2)
     purchase = []
     redeem = []
@@ -80,34 +105,9 @@ def predict():
         p = 0
         r = 0
         for uid, val in profile_features.iteritems():
-            key = '%s:%s' % (uid, today)
-            profile = profile_features[uid]
-            today_ = datetime.datetime(*time.strptime(today, '%Y%m%d')[:3])
-            yestoday = (today_ - datetime.timedelta(days = 1)).strftime('%Y%m%d')
-            #print 'yestoday:', yestoday
-            tmp_key = '%s:%s' % (uid, yestoday)
-            if tmp_key not in balance_features:
-                tmp_key = key
-            if tmp_key not in balance_features:
-                yestoday_balance = [1.0, 1.0]
-            else:
-                yestoday_balance = balance_features[tmp_key]
-            last_month_today = get_last_month_today(today_)
-            #print 'last_month_today', last_month_today
-            tmp_key = '%s:%s' % (uid, last_month_today)
-            if tmp_key not in balance_features:
-                tmp_key = key
-            if tmp_key not in balance_features:
-                last_month_today_balance = [1.0, 1.0]
-            else:
-                last_month_today_balance = balance_features[tmp_key]
-            is_mon_to_thur_ = [float(is_mon_to_thur(today_)),] #是否周一到周四
-            #print 'is_mon_to_thur:', is_mon_to_thur_
-            feature = profile + yestoday_balance +\
-                last_month_today_balance + is_mon_to_thur_ #+\
-                #interest_features[today]
-            pp = clf1.predict([feature,])[0]
-            rr = clf2.predict([feature,])[0]
+            features = get_features(uid, today)
+            pp = clf1.predict([features,])[0]
+            rr = clf2.predict([features,])[0]
             balance_features[key] = [pp, rr]
             p += pp
             r += rr
